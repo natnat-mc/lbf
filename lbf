@@ -37,11 +37,12 @@ elseif argv[1]=='arg' then
 elseif argc==0 or argv[1]=='help' or argv[1]=='-h' or argv[1]=='--help' then
 		io.write "Usage:\n"
 		io.write "\tlbf file <filename>\n"
+		io.write "\tlbf luac <filename>\n"
 		io.write "\tlbf args <program>\n"
 		io.write "\tlbf help\n"
 		os.exit(0)
 else
-		err "Usage: lbf file|arg|help"
+		err "Usage: lbf file|luac|arg|help"
 end
 
 if mode=='run' then
