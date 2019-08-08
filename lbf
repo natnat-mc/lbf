@@ -1,0 +1,161 @@
+#!/usr/bin/env lua
+
+-- constant limits
+local MAXMEM=10000
+
+-- error reporting function
+local function err(msg)
+		io.stderr:write(msg)
+		io.stderr:write '\n'
+		os.exit(1)
+end
+
+local argv, argc={...}, select('#', ...)
+
+local code, mode
+
+if argv[1]=='file' or argv[1]=='luac' then
+		mode=argv[1]=='file' and 'run' or argv[1]
+		if argc~=2 then
+				err("Usage: lbf "..argv[1].." <filename>")
+		end
+		local fd=io.open(argv[2], 'r')
+		if not fd then
+				err "Unable to open file"
+		end
+		code=fd:read '*a'
+		if not code then
+				err "Unable to read file"
+		end
+		fd:close()
+elseif argv[1]=='arg' then
+		mode='run'
+		if argc==1 then
+				err "Usage: lbf arg <program>"
+		end
+		code=table.concat(argv, 2, argc)
+elseif argc==0 or argv[1]=='help' or argv[1]=='-h' or argv[1]=='--help' then
+		io.write "Usage:\n"
+		io.write "\tlbf file <filename>\n"
+		io.write "\tlbf args <program>\n"
+		io.write "\tlbf help\n"
+		os.exit(0)
+else
+		err "Usage: lbf file|arg|help"
+end
+
+if mode=='run' then
+		-- parse brackets
+		local openb, closeb={}, {}
+		do
+				local n=0
+				local stack={}
+				for i=1, #code do
+						local c=code:sub(i, i)
+						if c=='[' then
+								n=n+1
+								stack[n]=i
+						elseif c==']' then
+								if n==0 then
+										err("Unexpected ']' at pos "..i)
+								end
+								openb[i]=stack[n]
+								closeb[stack[n]]=i
+								n=n-1
+						end
+				end
+				if n~=0 then
+						err("Unmatched '[' at pos "..stack[1])
+				end
+		end
+		
+		-- allocate memory
+		local mem={}
+		for i=1, MAXMEM do
+				mem[i]=0
+		end
+
+		-- setup cursors
+		local progc, memc=1, 1
+
+		-- setup character functions
+		local charfunc={}
+		charfunc['+']=function()
+				local n=mem[memc]
+				mem[memc]=n==255 and 0 or n+1
+		end
+		charfunc['-']=function()
+				local n=mem[memc]
+				mem[memc]=n==0 and 255 or n-1
+		end
+		charfunc['>']=function()
+				memc=memc==MAXMEM and 1 or memc+1
+		end
+		charfunc['<']=function()
+				memc=memc==1 and MAXMEM or memc-1
+		end
+		charfunc['[']=function()
+				if mem[memc]==0 then
+						progc=closeb[progc]
+				end
+		end
+		charfunc[']']=function()
+				if mem[memc]~=0 then
+						progc=openb[progc]
+				end
+		end
+		charfunc['.']=function()
+				io.write(string.char(mem[memc]))
+		end
+		charfunc[',']=function()
+				mem[memc]=string.byte(io.read(1) or '\0')
+		end
+
+		-- run the code
+		while progc<=#code do
+				local fn=charfunc[code:sub(progc, progc)]
+				if fn then
+						fn()
+				end
+				progc=progc+1
+		end
+elseif mode=='luac' then
+		local program, ntab={}, 0
+		table.insert(program, "local ptr, mem, lastv=1, {}, 0\n")
+		table.insert(program, "for i=1, "..MAXMEM.." do mem[i]=0 end\n")
+		for i=1, #code do
+				local line
+				local c=code:sub(i, i)
+				if c=='+' then
+						line="lastv=lastv==255 and 0 or lastv+1"
+				elseif c=='-' then
+						line="lastv=lastv==0 and 255 or lastv-1"
+				elseif c=='>' then
+						line="ptr, mem[ptr]=ptr=="..MAXMEM.." and 1 or ptr+1, lastv; lastv=mem[ptr]"
+				elseif c=='<' then
+						line="ptr, mem[ptr]=ptr==1 and "..MAXMEM.." or ptr-1, lastv; lastv=mem[ptr]"
+				elseif c=='.' then
+						line="io.write(string.char(lastv))"
+				elseif c==',' then
+						line="lastv=string.byte(io.read(1) or '\0')"
+				elseif c=='[' then
+						line="while lastv~=0 do"
+				elseif c==']' then
+						line="end"
+						ntab=ntab-1
+						if ntab<0 then
+								err("Unbalanced ']' at pos "..i)
+						end
+				end
+				if line then
+						table.insert(program, string.rep('\t', ntab)..line..' -- '..i..':'..c..'\n')
+				end
+				if c=='[' then
+						ntab=ntab+1
+				end
+		end
+		if ntab>0 then
+				err("Unbalanced '['")
+		end
+		io.write(table.concat(program))
+end
