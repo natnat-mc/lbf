@@ -158,6 +158,10 @@ local function optimize(ast)
 			didsomething=true
 		end
 	end
+	if ast.type=='root' and #(ast.value)~=0 and ast.value[1].type=='arith' then
+		ast.value[1].type='value'
+		didsomething=true
+	end
 	return didsomething
 end
 
