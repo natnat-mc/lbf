@@ -105,7 +105,8 @@ local function optimize(ast)
 	while working do
 		working=false
 		local child, prev
-		for i=1, #(ast.value) do
+		local i=1
+		while i<=#(ast.value) do
 			child, prev=ast.value[i], child
 			if child.type=='loop' then
 				if #(child.value)==1 and child.value[1].type=='arith' and child.value[1].value%2==1 then -- reset loops
@@ -151,6 +152,7 @@ local function optimize(ast)
 				i=i-1
 				working=true
 			end
+			i=i+1
 		end
 		if working then
 			didsomething=true
