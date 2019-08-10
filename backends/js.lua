@@ -27,17 +27,19 @@ return function(ast)
 			end
 			local t, v=node.type, node.value
 			if t=='arith' then
-				if v>=0 then
+				if v==1 then
+					p "val++"
+				elseif v==-1 then
+					p "val--"
+				elseif v>=0 then
 					p "val+="
 					p(v%MAXINT)
 				else
 					p "val-="
 					p(-v%MAXINT)
 				end
-				p "; val%="
-				p(MAXINT)
-				p "; if(val<0) val+="
-				p(MAXINT)
+				p "; val&="
+				p(MAXINT-1)
 				p ";\n"
 			elseif t=='value' then
 				p "val="
@@ -45,17 +47,19 @@ return function(ast)
 				p ";\n"
 			elseif t=='mem' then
 				p "mem[ptr]=val; ptr"
-				if v>=0 then
+				if v==1 then
+					p "++"
+				elseif v==-1 then
+					p "--"
+				elseif v>=0 then
 					p "+="
 					p(v%MAXMEM)
 				else
 					p "-="
 					p((-v)%MAXMEM)
 				end
-				p "; ptr%="
-				p(MAXMEM)
-				p "; if(ptr<0) ptr+="
-				p(MAXMEM)
+				p "; ptr&="
+				p(MAXMEM-1)
 				p "; val=mem[ptr];\n"
 			elseif t=='write' then
 				p "write(val);\n"
