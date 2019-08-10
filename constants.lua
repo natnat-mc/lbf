@@ -1,4 +1,4 @@
 return {
 	MAXINT=256,
-	MAXMEM=1024
+	MAXMEM=65536
 }
