@@ -1,0 +1,60 @@
+repeat
+	didsomething=false
+	traverse
+		if canoptimize
+			optimize
+			didsomething=true
+until didsomething==false
+
+root
+\-loop
+  \-arith (value%2==1)
+-> value (value=0)
+ -- always falls to 0
+
+root
+|-value (value=a)
+\-arith (value=b)
+-> value (value=a+b)
+ -- combination
+
+root
+|-arith (value=a)
+\-arith (value=b)
+-> arith (value=a+b)
+ -- combination
+
+root
+|-arith
+\-value (value=a)
+-> value (value=a)
+ -- overwritten
+
+root
+|-value
+\-value (value=a)
+-> value (value=a)
+ -- overwritten
+
+root
+\-arith (value=0)
+-> (none)
+ -- AST cleanup
+
+root
+|-mem (value=a)
+\-mem (value=b)
+-> mem (value=a+b)
+ -- combination
+
+root
+\-mem (value=0)
+-> (none)
+ -- AST cleanup
+
+root
+|-value (value=0)
+\-loop
+  \-...
+-> value (value=0)
+ -- never executed
