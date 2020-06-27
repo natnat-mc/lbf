@@ -101,6 +101,9 @@ local function parse(code)
 end
 
 local function optimize(ast)
+	if type(ast.value)~='table' then
+		return false
+	end
 	local working, didsomething=true, false
 	while working do
 		working=false
