@@ -11,4 +11,5 @@ For now, the best way to install lbf is to clone this repo, and install `argpars
 - `js`: genetate JavaScript code meant for a browser, using `prompt` and `alert`
 - `bf`: generate brainfuck code, useful to optimize a program
 - `fastc`: generates C code without any safety check
+- `iusearchbtw`: generates [I use Arch btw](https://github.com/OverMighty/i-use-arch-btw) code
 
